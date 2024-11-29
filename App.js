@@ -1,3 +1,5 @@
+//Layout and UI structure of the app of the calculator
+
 import React, { Component } from 'react';
 import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
 import Button from './components/Button';
@@ -13,24 +15,112 @@ export default class App extends Component {
 
   handleTap = (type, value) => {
     this.setState((state) => {
-      if (type === 'number' && value === '.' && state.currentValue.includes('.')) {
-        return state; // Prevent adding multiple decimals
+      const { currentValue, operator, resultDisplayed } = state;
+      
+      // Check if the currentValue has 15 characters before appending more numbers
+      const maxLength = 15;
+      if (type === 'number' && currentValue.length >= maxLength && value !== '.') {
+        return state;  // Don't append more if the length is already 15
       }
-
-      const newState = calculator(type, value, state);
-
-      // Add to history when '=' is pressed
-      if (type === 'equal') {
-        const historyItem = `${state.currentValue} = ${newState.currentValue}`;
+  
+      // Prevent multiple decimals
+      if (type === 'number' && value === '.' && currentValue.includes('.')) {
+        return state;
+      }
+  
+      // Handle numbers
+      if (type === 'number') {
+        // If a result is displayed, reset currentValue and add the new number
+        if (resultDisplayed) {
+          return {
+            currentValue: value === '.' ? '0.' : `${value}`,
+            resultDisplayed: false,
+          };
+        }
+  
+        // Append the number or replace '0' if it's the starting value
         return {
-          ...newState,
-          history: [...state.history, historyItem],
+          currentValue:
+            currentValue === '0' && value !== '.' ? `${value}` : `${currentValue}${value}`,
         };
       }
-
-      return newState;
+  
+      // Handle operators
+      if (type === 'operator') {
+        // If there is already an operator, calculate the result first
+        if (operator && state.previousValue !== null) {
+          const result = calculator('equal', '=', state);
+          return {
+            ...result,
+            operator: value,
+            previousValue: result.currentValue,
+            currentValue: '0',
+            resultDisplayed: false,
+          };
+        }
+  
+        // Set operator and move currentValue to previousValue
+        return {
+          operator: value,
+          previousValue: currentValue,
+          currentValue: '0',
+        };
+      }
+  
+      // Handle equal
+      if (type === 'equal') {
+        const result = calculator(type, value, state);
+        
+        // Add the calculation to the history
+        const calculation = `${state.previousValue} ${state.operator} ${state.currentValue} = ${result.currentValue}`;
+        const updatedHistory = [...state.history, calculation]; // Append the new calculation to history
+        
+        return {
+          ...result,
+          resultDisplayed: true,
+          history: updatedHistory, // Update the history state
+        };
+      }
+  
+      // Handle clear
+      if (type === 'clear') {
+        return {
+          ...initialState,
+        };
+      }
+  
+      // Handle percentage
+      if (type === 'percentage') {
+        return {
+          currentValue: (parseFloat(currentValue) * 0.01).toString(),
+          resultDisplayed: true,
+        };
+      }
+  
+      // Handle +/- toggle
+      if (type === 'posneg') {
+        const newValue = parseFloat(currentValue) * -1;
+        return {
+          currentValue: newValue.toString(),
+        };
+      }
+  
+      // Handle backspace
+      if (type === 'backspace') {
+        if (currentValue.length === 1) {
+          return {
+            currentValue: '0',
+          };
+        }
+        return {
+          currentValue: currentValue.slice(0, -1),
+        };
+      }
+  
+      return state;
     });
-  };
+  };  
+  
 
   toggleHistory = () => {
     this.setState((prevState) => ({
@@ -50,20 +140,23 @@ export default class App extends Component {
               <TouchableOpacity onPress={this.toggleHistory} style={styles.historyCloseButton}>
                 <Text style={styles.historyCloseText}>HIDE HISTORY</Text>
               </TouchableOpacity>
-              <Text style={styles.historyTitle}>Calculation History</Text>
-              <ScrollView>
-                {history.length > 0 ? (
-                  history.map((item, index) => (
-                    <Text key={index} style={styles.historyItem}>
-                      {item}
-                    </Text>
-                  ))
-                ) : (
-                  <Text style={styles.historyItem}>No history available</Text>
-                )}
-              </ScrollView>
-            </View>
-          )}
+
+    <Text style={styles.historyTitle}>Calculation History</Text>
+
+    <ScrollView>
+      {history.length > 0 ? (
+        history.map((item, index) => (
+          <Text key={index} style={styles.historyItem}>
+            {item}
+          </Text>
+        ))
+      ) : (
+        <Text style={styles.historyItem}>No history available</Text>
+      )}
+    </ScrollView>
+  </View>
+)}
+
 
           {/* Calculator Display */}
           {this.state.previousValue && this.state.operator ? (
@@ -71,6 +164,16 @@ export default class App extends Component {
               {this.state.previousValue} {this.state.operator} {this.state.currentValue}
             </Text>
           ) : null}
+
+          {/* Current Value */}
+          <Text style={styles.value}>
+            {this.state.currentValue === 'Infinity' 
+              ? 'Undefined result' // Custom message for 0/0
+              : this.state.currentValue === 'NaN'
+              ? 'Cannot divide by zero' // Custom message for anyNumber/0
+              : parseFloat(this.state.currentValue).toFixed(8).replace(/\.?0+$/, '')}
+          </Text>
+
 
           {/* Toggle History Button */}
           <View style={styles.historyToggleContainer}>
@@ -80,11 +183,6 @@ export default class App extends Component {
               </Text>
             </TouchableOpacity>
           </View>
-
-          {/* Current Value */}
-          <Text style={styles.value}>
-            {parseFloat(this.state.currentValue).toLocaleString()}
-          </Text>
 
           {/* Calculator Buttons */}
           <Row>
