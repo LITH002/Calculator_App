@@ -1,3 +1,4 @@
+//IM Number - IM/2021/117
 //Layout and UI structure of the app of the calculator
 
 import React, { Component } from 'react';
@@ -6,24 +7,26 @@ import Button from './components/Button';
 import Row from './components/Row';
 import calculator, { initialState } from './util/calculator';
 
+// Main App component
 export default class App extends Component {
   state = {
     ...initialState,
-    showHistory: false, // Track the visibility of the history panel
-    history: [], // Array to store calculation history
+    showHistory: false, // Track the visibility of the calculation history
+    history: [], // Stores the history of calculations
   };
 
+  // Function to handle button taps
   handleTap = (type, value) => {
     this.setState((state) => {
       const { currentValue, operator, resultDisplayed } = state;
       
-      // Check if the currentValue has 15 characters before appending more numbers
+      // Prevent appending more numbers if the display is full (15 characters limit)
       const maxLength = 15;
       if (type === 'number' && currentValue.length >= maxLength && value !== '.') {
-        return state;  // Don't append more if the length is already 15
+        return state;  // Return current state if length exceeds 15
       }
   
-      // Prevent multiple decimals
+      // Prevent adding multiple decimals
       if (type === 'number' && value === '.' && currentValue.includes('.')) {
         return state;
       }
@@ -47,6 +50,11 @@ export default class App extends Component {
   
       // Handle operators
       if (type === 'operator') {
+        // Prevent entering multiple consecutive operators
+        if (state.operator && state.currentValue === '0') {
+          return state; // Do nothing if there's already an operator and no new number
+        }
+
         // If there is already an operator, calculate the result first
         if (operator && state.previousValue !== null) {
           const result = calculator('equal', '=', state);
@@ -58,7 +66,7 @@ export default class App extends Component {
             resultDisplayed: false,
           };
         }
-  
+
         // Set operator and move currentValue to previousValue
         return {
           operator: value,
@@ -66,7 +74,7 @@ export default class App extends Component {
           currentValue: '0',
         };
       }
-  
+
       // Handle equal
       if (type === 'equal') {
         const result = calculator(type, value, state);
