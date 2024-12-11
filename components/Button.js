@@ -1,3 +1,5 @@
+  //IM Number - IM/2021/117
+
 import { Dimensions, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 export default ({ onPress, text, size, theme, transparent }) => {
@@ -47,7 +49,6 @@ const styles = StyleSheet.create({
   },
   textSecondary: {
     color: '#060606',
-    
   },
   buttonDouble: {
     width: screen.width / 2 - 10,
