@@ -1,10 +1,10 @@
+//IM Number - IM/2021/117
 //Logic of the calculator
 
 export const initialState = {
   currentValue: '0',
   operator: null,
   previousValue: null,
-  history: [],
   resultDisplayed: false, // Tracks if a result is displayed
   isNewNumber: true, // Flag to handle number concatenation
 };
@@ -12,9 +12,10 @@ export const initialState = {
 const handleNumber = (value, state) => {
   const maxLength = 15;
   
+  // If a result was just displayed or it's a new input, reset currentValue
   if (state.resultDisplayed || state.isNewNumber) {
     return {
-      currentValue: value === '.' ? '0.' : `${value}`,
+      currentValue: value === '.' ? '0.' : `${value}`, // If input is '.', start with '0.'
       resultDisplayed: false,
       isNewNumber: false,
     };
@@ -24,21 +25,24 @@ const handleNumber = (value, state) => {
     return state; // Prevent multiple decimals
   }
 
+  // Prevent starting a number with '0' unless it's a decimal
   if (state.currentValue === '0' && value !== '.') {
     return { currentValue: `${value}` };
   }
 
   // Check if currentValue length is already 15
   if (state.currentValue.length >= maxLength && value !== '.') {
-    return state;  // Prevent adding more digits if it's already 15 digits
+    return state;  
   }
 
+  // Concatenate the new number to the current value
   return { currentValue: `${state.currentValue}${value}` };
 };
 
 const handleOperator = (operator, state) => {
   const { currentValue, previousValue, operator: prevOperator } = state;
 
+  // If an operator was already selected and a new operator is entered, calculate the result first
   if (prevOperator && !state.isNewNumber) {
     const updatedState = handleEqual(state); // Perform calculation with existing operator
     return {
@@ -56,9 +60,11 @@ const handleOperator = (operator, state) => {
   };
 };
 
+// Executes the calculation based on the current operator and values.
 const handleEqual = (state) => {
   const { previousValue, currentValue, operator } = state;
 
+  // Return unchanged state if calculation is not possible
   if (!operator || !previousValue || !currentValue) {
     return state;
   }
@@ -122,27 +128,18 @@ const calculator = (type, value, state) => {
       return handleEqual(state);
     case 'backspace':
       if (state.resultDisplayed || state.currentValue.length <= 1) {
+        // Clear input if result is displayed or only one character remains
         return {
           currentValue: '0',
           isNewNumber: true,
         };
       }
       return {
-        currentValue: state.currentValue.slice(0, -1),
+        currentValue: state.currentValue.slice(0, -1), // Remove the last character from currentValue
       };
     default:
       return state;
   }
-};
-
-const formatDecimal = (value, decimalPlaces) => {
-  const num = parseFloat(value);
-  return isNaN(num) ? '0' : num.toFixed(decimalPlaces);
-};
-
-
-const roundResult = (number, decimals = 8) => {
-  return parseFloat(number.toFixed(decimals));
 };
 
 export default calculator;
